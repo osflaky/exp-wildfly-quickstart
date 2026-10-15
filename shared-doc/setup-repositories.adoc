@@ -1,0 +1,51 @@
+Setup the required Maven repositories (if you don't have them set up in Maven global settings):
+
+ifndef::ProductRelease[]
+[source,xml]
+----
+<repositories>
+    <repository>
+        <id>jboss-public-maven-repository</id>
+        <name>JBoss Public Maven Repository</name>
+        <url>https://repository.jboss.org/nexus/content/groups/public</url>
+    </repository>
+</repositories>
+<pluginRepositories>
+    <pluginRepository>
+        <id>jboss-public-maven-repository</id>
+        <name>JBoss Public Maven Repository</name>
+        <url>https://repository.jboss.org/nexus/content/groups/public</url>
+    </pluginRepository>
+</pluginRepositories>
+----
+endif::[]
+
+ifdef::ProductRelease[]
+[source,xml]
+----
+<repositories>
+    <repository>
+        <id>jboss-public-maven-repository</id>
+        <name>JBoss Public Maven Repository</name>
+        <url>https://repository.jboss.org/nexus/content/groups/public</url>
+    </repository>
+    <repository>
+        <id>redhat-ga-maven-repository</id>
+        <name>Red Hat GA Maven Repository</name>
+        <url>https://maven.repository.redhat.com/ga/</url>
+    </repository>
+</repositories>
+<pluginRepositories>
+    <pluginRepository>
+        <id>jboss-public-maven-repository</id>
+        <name>JBoss Public Maven Repository</name>
+        <url>https://repository.jboss.org/nexus/content/groups/public</url>
+    </pluginRepository>
+    <pluginRepository>
+        <id>redhat-ga-maven-repository</id>
+        <name>Red Hat GA Maven Repository</name>
+        <url>https://maven.repository.redhat.com/ga/</url>
+    </pluginRepository>
+</pluginRepositories>
+----
+endif::[]
