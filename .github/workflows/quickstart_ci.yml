@@ -1,0 +1,74 @@
+# Single CI workflow that tests all quickstarts, and project build.
+#
+# A quickstart opts in to CI by providing either:
+#   <qs>/.ci/test-quickstart.env  — common flow (sourced by the project runner)
+#   <qs>/.ci/test-quickstart.sh   — fully standalone script
+#
+# All test logic lives in per-quickstart .ci/ files and the shared project runner
+# .ci/test-quickstarts.sh. This workflow handles only GitHub-specific concerns:
+# change detection, matrix construction, JDK setup, the WildFly snapshot build,
+# and artifact upload on failure.
+#
+# Job order:
+#   WildFly-build  →  Setup          →  Quickstart-default    (always)
+#                                    →  Quickstart-with-deps  (only when WildFly branch exists)
+#                  →  Project-default                   (always)
+#                  →  Project-with-deps                 (only when WildFly branch exists)
+
+name: Quickstarts CI
+
+on:
+  workflow_dispatch:
+    # No paths filter — all PRs trigger; the Setup job decides what actually runs.
+
+# Cancel in-progress runs for the same workflow + ref
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.ref || github.run_id }}'
+  cancel-in-progress: true
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # Build WildFly from the PR's target branch (if that branch exists in
+  # wildfly/wildfly). Silently skipped when the branch is not found; downstream
+  # jobs still run with an empty wildfly-version output.
+  # ---------------------------------------------------------------------------
+  Project-default:
+    name: "Project: JDK ${{ matrix.jdk }} — ${{ matrix.os }} [${{ matrix.expander_leg
+      }}]"
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - jdk: 25
+          os: macos-latest
+          arch: arm64
+          runner: macos-latest
+          expander_leg: macos-latest-25-arm64
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Set up JDK ${{ matrix.jdk }}
+      uses: actions/setup-java@v6
+      with:
+        java-version: ${{ matrix.jdk }}
+        distribution: temurin
+        cache: maven
+
+    - name: Build project release
+      run: mvn -U -B -fae clean install -Drelease 
+        -P-provisioned-server,-bootable-jar
+      shell: bash
+
+    - uses: actions/upload-artifact@v7
+      if: failure()
+      with:
+        name: surefire-project-JDK${{ matrix.jdk }}-${{ matrix.os }}
+        path: "**/surefire-reports/*.txt"
+
+  # ---------------------------------------------------------------------------
+  # Project release build against the WildFly snapshot (only when WildFly-build
+  # produced a wildfly-version output).
+  # ---------------------------------------------------------------------------
+    timeout-minutes: 150
